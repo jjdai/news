@@ -3,7 +3,7 @@
 //  ------------------------------------------------------------------------ //
 //                XOOPS - PHP Content Management System                      //
 //                    Copyright (c) 2000 XOOPS.org                           //
-//                       <http://xoops.org/>                             //
+//                       <http://www.xoops.org/>                             //
 //  ------------------------------------------------------------------------ //
 //  This program is free software; you can redistribute it and/or modify     //
 //  it under the terms of the GNU General Public License as published by     //
@@ -24,46 +24,48 @@
 //  along with this program; if not, write to the Free Software              //
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA //
 //  ------------------------------------------------------------------------ //
-include dirname(dirname(__DIR__)) . '/mainfile.php';
-include_once XOOPS_ROOT_PATH . '/modules/news/class/class.sfiles.php';
-include_once XOOPS_ROOT_PATH . '/modules/news/class/class.newsstory.php';
+include_once '../../mainfile.php';
+include_once XOOPS_ROOT_PATH.'/modules/news/class/class.sfiles.php';
+include_once XOOPS_ROOT_PATH.'/modules/news/class/class.newsstory.php';
 
-$fileid = (isset($_GET['fileid'])) ? (int)($_GET['fileid']) : 0;
+$fileid = (isset($_GET['fileid'])) ? intval($_GET['fileid']) : 0;
 if (empty($fileid)) {
-    redirect_header(XOOPS_URL . '/modules/news/index.php', 2, _ERRORS);
-
+    redirect_header(XOOPS_URL.'/modules/news/index.php',2,_ERRORS);
+    exit();
 }
-$myts   =& MyTextSanitizer::getInstance(); // MyTextSanitizer object
+$myts =& MyTextSanitizer::getInstance(); // MyTextSanitizer object
 $sfiles = new sFiles($fileid);
 
 // Do we have the right to see the file ?
 $article = new NewsStory($sfiles->getStoryid());
 // and the news, can we see it ?
-if ($article->published() == 0 || $article->published() > time()) {
-    redirect_header(XOOPS_URL . '/modules/news/index.php', 2, _NW_NOSTORY);
-
+if ( $article->published() == 0 || $article->published() > time() ) {
+    redirect_header(XOOPS_URL.'/modules/news/index.php', 2, _NW_NOSTORY);
+    exit();
 }
 // Expired
-if ($article->expired() != 0 && $article->expired() < time()) {
-    redirect_header(XOOPS_URL . '/modules/news/index.php', 2, _NW_NOSTORY);
-
+if ( $article->expired() != 0 && $article->expired() < time() ) {
+    redirect_header(XOOPS_URL.'/modules/news/index.php', 2, _NW_NOSTORY);
+    exit();
 }
+
 
 $gperm_handler =& xoops_gethandler('groupperm');
 if (is_object($xoopsUser)) {
     $groups = $xoopsUser->getGroups();
 } else {
-    $groups = XOOPS_GROUP_ANONYMOUS;
+	$groups = XOOPS_GROUP_ANONYMOUS;
 }
 if (!$gperm_handler->checkRight('news_view', $article->topicid(), $groups, $xoopsModule->getVar('mid'))) {
-    redirect_header(XOOPS_URL . '/modules/news/index.php', 3, _NOPERM);
-
+	redirect_header(XOOPS_URL.'/modules/news/index.php', 3, _NOPERM);
+	exit();
 }
 
 $sfiles->updateCounter();
-$url = XOOPS_UPLOAD_URL . '/' . $sfiles->getDownloadname();
+$url=XOOPS_UPLOAD_URL.'/'.$sfiles->getDownloadname();
 if (!preg_match("/^ed2k*:\/\//i", $url)) {
-    Header("Location: $url");
+	Header("Location: $url");
 }
-echo "<html><head><meta http-equiv=\"Refresh\" content=\"0; URL=" . $myts->htmlSpecialChars($url) . "\"></meta></head><body></body></html>";
+echo "<html><head><meta http-equiv=\"Refresh\" content=\"0; URL=".$myts->htmlSpecialChars($url)."\"></meta></head><body></body></html>";
 exit();
+?>

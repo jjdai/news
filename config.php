@@ -1,6 +1,6 @@
 <?php
 //  ------------------------------------------------------------------------ //
-//                  Copyright (c) 2005-2006 Herve Thouzard                     //
+//                  Copyright (c) 2005-2006 Hervé Thouzard                     //
 //                     <http://www.herve-thouzard.com/>                      //
 // ------------------------------------------------------------------------- //
 //  This program is free software; you can redistribute it and/or modify     //
@@ -43,10 +43,11 @@ $cfg['meta_keywords_count'] = 20;
  */
 $cfg['meta_keywords_order'] = 0;
 
+
 /**
  * Does the module searches inside its own comments ?
  */
-$cfg['config_search_comments'] = true;
+ $cfg['config_search_comments'] = true;
 
 /**
  * Only enable registred users to rate news ?
@@ -67,3 +68,4 @@ $cfg['use_fun_menu'] = false;
  * Create a clickable path from the root to the current topic (if we are viewing a topic) ?
  */
 $cfg['create_clickable_path'] = false;
+?>

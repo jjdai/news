@@ -3,7 +3,7 @@
 //  ------------------------------------------------------------------------ //
 //                XOOPS - PHP Content Management System                      //
 //                    Copyright (c) 2000 XOOPS.org                           //
-//                       <http://xoops.org/>                             //
+//                       <http://www.xoops.org/>                             //
 //  ------------------------------------------------------------------------ //
 //  This program is free software; you can redistribute it and/or modify     //
 //  it under the terms of the GNU General Public License as published by     //
@@ -25,48 +25,47 @@
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA //
 //  ------------------------------------------------------------------------ //
 // Author: Kazumi Ono (AKA onokazu)                                          //
-// URL: http://www.myweb.ne.jp/, http://xoops.org/, http://jp.xoops.org/ //
-// Project: XOOPS Project                                                    //
+// URL: http://www.myweb.ne.jp/, http://www.xoops.org/, http://jp.xoops.org/ //
+// Project: The XOOPS Project                                                //
 // ------------------------------------------------------------------------- //
 
 error_reporting(0);
-
-include_once __DIR__ . '/header.php';
-if (!is_file(XOOPS_PATH.'/vendor/tcpdf/tcpdf.php')) {
-    redirect_header(XOOPS_URL.'/modules/news/index.php',3,'tcpdf_for_xoops not installed');
-}
+include_once 'header.php';
 $myts =& MyTextSanitizer::getInstance();
 include_once XOOPS_ROOT_PATH.'/modules/news/class/class.newsstory.php';
+require_once XOOPS_ROOT_PATH.'/modules/news/fpdf/fpdf.inc.php';
 include_once XOOPS_ROOT_PATH.'/modules/news/include/functions.php';
-$storyid = isset($_GET['storyid']) ? (int)($_GET['storyid']) : 0;
+
+$storyid = isset($_GET['storyid']) ? intval($_GET['storyid']) : 0;
 
 if (empty($storyid))  {
     redirect_header(XOOPS_URL.'/modules/news/index.php',2,_NW_NOSTORY);
-
+    exit();
 }
 
 $article = new NewsStory($storyid);
 // Not yet published
 if ( $article->published() == 0 || $article->published() > time() ) {
     redirect_header(XOOPS_URL.'/modules/news/index.php', 2, _NW_NOSTORY);
-
+    exit();
 }
 
 // Expired
 if ( $article->expired() != 0 && $article->expired() < time() ) {
     redirect_header(XOOPS_URL.'/modules/news/index.php', 2, _NW_NOSTORY);
-
+    exit();
 }
+
 
 $gperm_handler =& xoops_gethandler('groupperm');
 if (is_object($xoopsUser)) {
     $groups = $xoopsUser->getGroups();
 } else {
-    $groups = XOOPS_GROUP_ANONYMOUS;
+	$groups = XOOPS_GROUP_ANONYMOUS;
 }
 if (!$gperm_handler->checkRight('news_view', $article->topicid(), $groups, $xoopsModule->getVar('mid'))) {
-    redirect_header(XOOPS_URL.'/modules/news/index.php', 3, _NOPERM);
-
+	redirect_header(XOOPS_URL.'/modules/news/index.php', 3, _NOPERM);
+	exit();
 }
 
 $dateformat = news_getmoduleoption('dateformat');
@@ -78,9 +77,11 @@ $pdf_data['title'] = $article->title();
 $topic_title = $article->topic_title();
 $topic_title = news_html2text($myts->undoHtmlSpecialChars($topic_title));
 $pdf_data['subtitle'] = $topic_title;
-$pdf_data['subsubtitle'] = $article->subtitle();
+
+$pdf_data['subsubtitle'] = '';
 $pdf_data['date'] = formatTimestamp($article->published(),$dateformat);
 $pdf_data['filename'] = preg_replace("/[^0-9a-z\-_\.]/i",'', $myts->htmlSpecialChars($article->topic_title()).' - '.$article->title());
+$pdf_data['filename'] = 'test';
 $hometext = $article->hometext();
 $bodytext = $article->bodytext();
 $content = $myts->undoHtmlSpecialChars($hometext) . '<br /><br />' . $myts->undoHtmlSpecialChars($bodytext);
@@ -91,63 +92,78 @@ $pdf_data['author'] = $article->uname();
 
 //Other stuff
 $puff='<br />';
-$puffer='<br /><br />';
+$puffer='<br /><br /><br />';
 
 //create the A4-PDF...
-$pdf_config['slogan'] = XOOPS_URL.' - '.$xoopsConfig['sitename'].' - '.$xoopsConfig['slogan'];
-require_once (XOOPS_PATH.'/vendor/tcpdf/tcpdf.php');
-$pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, _CHARSET, false);
-// load $localLanguageOptions array with language specific definitions and apply
-if (is_file(XOOPS_PATH.'/vendor/tcpdf/config/lang/'.$xoopsConfig['language'].'.php')) {
-    require_once( XOOPS_PATH.'/vendor/tcpdf/config/lang/'.$xoopsConfig['language'].'.php');
-} else {
-    require_once( XOOPS_PATH.'/vendor/tcpdf/config/lang/english.php');
+$pdf_config['slogan']=$xoopsConfig['sitename'].' - '.$xoopsConfig['slogan'];
+
+
+$pdf=new PDF();
+if(method_exists($pdf, 'encoding')){
+	$pdf->encoding($pdf_data, _CHARSET);
 }
-$pdf->setLanguageArray($localLanguageOptions);
-
-$pdf->SetCreator(PDF_CREATOR);
-
+$pdf->SetCreator($pdf_config['creator']);
 $pdf->SetTitle($pdf_data['title']);
-$pdf->SetAuthor(PDF_AUTHOR);
+$pdf->SetAuthor($pdf_config['url']);
 $pdf->SetSubject($pdf_data['author']);
-$out = PDF_AUTHOR.', '.$pdf_data['author'].', '.$pdf_data['title'].', '.$pdf_data['subtitle'].', '.$pdf_data['subsubtitle'];
+$out=$pdf_config['url'].', '.$pdf_data['author'].', '.$pdf_data['title'].', '.$pdf_data['subtitle'].', '.$pdf_data['subsubtitle'];
 $pdf->SetKeywords($out);
 $pdf->SetAutoPageBreak(true,25);
-$pdf->SetMargins(PDF_MARGIN_LEFT,PDF_MARGIN_TOP,PDF_MARGIN_RIGHT);
-$pdf->SetFooterMargin(PDF_MARGIN_FOOTER);
-$pdf->setHeaderFont(Array(PDF_FONT_NAME_SUB, '', PDF_FONT_SIZE_SUB));
-$pdf->setFooterFont(Array(PDF_FONT_NAME_DATA, '', PDF_FONT_SIZE_DATA));
-$pdf->setFooterData($tc=array(0,64,0), $lc=array(0,64,128));
-//$pdf->SetHeaderData('','5',$pdf_config['slogan']);
-$pdf->SetHeaderData(PDF_HEADER_LOGO, PDF_HEADER_LOGO_WIDTH, $pdf_config['slogan'], array(0,64,255), array(0,64,128));
-//set margins
-$pdf->SetMargins(PDF_MARGIN_LEFT, PDF_MARGIN_TOP, PDF_MARGIN_RIGHT);
-$pdf->SetHeaderMargin(PDF_MARGIN_HEADER);
-$pdf->SetFooterMargin(PDF_MARGIN_FOOTER);
-
+$pdf->SetMargins($pdf_config['margin']['left'],$pdf_config['margin']['top'],$pdf_config['margin']['right']);
 $pdf->Open();
+
 //First page
 $pdf->AddPage();
 $pdf->SetXY(24,25);
 $pdf->SetTextColor(10,60,160);
-$pdf->SetFont(PDF_FONT_NAME_TITLE,PDF_FONT_STYLE_TITLE,PDF_FONT_SIZE_TITLE);
-$pdf->WriteHTML($pdf_data['title'].' - '.$pdf_data['subtitle'],K_TITLE_MAGNIFICATION);
-//$pdf->Line(25,20,190,20);
-if ($pdf_data['subsubtitle'] != '') {
-    $pdf->WriteHTML($puff, K_XSMALL_RATIO);
-    $pdf->SetFont(PDF_FONT_NAME_SUBSUB, PDF_FONT_STYLE_SUBSUB, PDF_FONT_SIZE_SUBSUB);
-    $pdf->WriteHTML($pdf_data['subsubtitle'], '1');
-}
-$pdf->WriteHTML($puff,'0.2');
-$pdf->SetFont(PDF_FONT_NAME_DATA,PDF_FONT_STYLE_DATA,PDF_FONT_SIZE_DATA);
-$out = NEWS_PDF_AUTHOR.': '.$pdf_data['author'].'<br />';
-$pdf->WriteHTML($out,'0.2');
-$out = NEWS_PDF_DATE.': '. $pdf_data['date'].'<br />';
-$pdf->WriteHTML($out,'0.2');
-$pdf->SetTextColor(0,0,0);
-$pdf->WriteHTML($puffer,'1');
+$pdf->SetFont($pdf_config['font']['slogan']['family'],$pdf_config['font']['slogan']['style'],$pdf_config['font']['slogan']['size']);
+if ( _CHARSET == 'UTF-8') { // Modified by MONTUY337513/black_beard
+	$pdf->WriteHTML(utf8_decode($pdf_config['slogan']), $pdf_config['scale']); 
+} else {
+	$pdf->WriteHTML($pdf_config['slogan'], $pdf_config['scale']);
+} // end 
+//$pdf->Image($pdf_config['logo']['path'],$pdf_config['logo']['left'],$pdf_config['logo']['top'],$pdf_config['logo']['width'],$pdf_config['logo']['height'],'',$pdf_config['url']);
+$pdf->Line(25,30,190,30);
+$pdf->SetXY(25,35);
+$pdf->SetFont($pdf_config['font']['title']['family'],$pdf_config['font']['title']['style'],$pdf_config['font']['title']['size']);
+$pdf->WriteHTML($pdf_data['title'],$pdf_config['scale']);
 
-$pdf->SetFont(PDF_FONT_NAME_MAIN,PDF_FONT_STYLE_MAIN, PDF_FONT_SIZE_MAIN);
+if ($pdf_data['subtitle']<>''){
+	$pdf->WriteHTML($puff,$pdf_config['scale']);
+	$pdf->SetFont($pdf_config['font']['subtitle']['family'],$pdf_config['font']['subtitle']['style'],$pdf_config['font']['subtitle']['size']);
+	$pdf->WriteHTML($pdf_data['subtitle'],$pdf_config['scale']);
+}
+if ($pdf_data['subsubtitle']<>'') {
+	$pdf->WriteHTML($puff,$pdf_config['scale']);
+	$pdf->SetFont($pdf_config['font']['subsubtitle']['family'],$pdf_config['font']['subsubtitle']['style'],$pdf_config['font']['subsubtitle']['size']);
+	$pdf->WriteHTML($pdf_data['subsubtitle'],$pdf_config['scale']);
+}
+
+$pdf->WriteHTML($puff,$pdf_config['scale']);
+$pdf->SetFont($pdf_config['font']['author']['family'],$pdf_config['font']['author']['style'],$pdf_config['font']['author']['size']);
+if ( _CHARSET == 'UTF-8') { // Modified by MONTUY337513/black_beard
+	$out=utf8_decode(NEWS_PDF_AUTHOR).': '; 
+} else {
+	$out=NEWS_PDF_AUTHOR.': '; 
+} //end
+$out.=$pdf_data['author'];
+$pdf->WriteHTML($out,$pdf_config['scale']);
+$pdf->WriteHTML($puff,$pdf_config['scale']);
+if ( _CHARSET == 'UTF-8') { // Modified by MONTUY337513/black_beard
+    $out=utf8_decode(NEWS_PDF_DATE).': ';
+} else {
+    $out=NEWS_PDF_DATE.': ';
+} //end
+$out.=$pdf_data['date'];
+$pdf->WriteHTML($out,$pdf_config['scale']);
+$pdf->WriteHTML($puff,$pdf_config['scale']);
+
+$pdf->SetTextColor(0,0,0);
+$pdf->WriteHTML($puffer,$pdf_config['scale']);
+
+$pdf->SetFont($pdf_config['font']['content']['family'],$pdf_config['font']['content']['style'],$pdf_config['font']['content']['size']);
 $pdf->WriteHTML($pdf_data['content'],$pdf_config['scale']);
 
+//$pdf->Output($pdf_data['filename'],'');
 $pdf->Output();
+?>

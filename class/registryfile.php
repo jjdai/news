@@ -1,6 +1,6 @@
 <?php
 //  ------------------------------------------------------------------------ //
-//                  Copyright (c) 2005-2006 Herve Thouzard                     //
+//                  Copyright (c) 2005-2006 Hervé Thouzard                     //
 //                     <http://www.herve-thouzard.com/>                      //
 // ------------------------------------------------------------------------- //
 //  This program is free software; you can redistribute it and/or modify     //
@@ -22,74 +22,55 @@
 //  along with this program; if not, write to the Free Software              //
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA //
 //  ------------------------------------------------------------------------ //
-// defined('XOOPS_ROOT_PATH') || exit('XOOPS root path not defined');
-
-/**
- * Class news_registryfile
- */
-class news_registryfile
-{
-    var $filename; // filename to manage
-
-    /**
-     * @param null $fichier
-     */
-    function news_registryfile($fichier = null)
-    {
-        $this->setfile($fichier);
-    }
-
-    /**
-     * @param null $fichier
-     */
-    function setfile($fichier = null)
-    {
-        if ($fichier) {
-            $this->filename = XOOPS_UPLOAD_PATH . '/' . $fichier;
-        }
-    }
-
-    /**
-     * @param null $fichier
-     *
-     * @return bool|string
-     */
-    function getfile($fichier = null)
-    {
-        $fw = '';
-        if (!$fichier) {
-            $fw = $this->filename;
-        } else {
-            $fw = XOOPS_UPLOAD_PATH . '/' . $fichier;
-        }
-        if (file_exists($fw)) {
-            return file_get_contents($fw);
-        } else {
-            return '';
-        }
-    }
-
-    /**
-     * @param      $content
-     * @param null $fichier
-     *
-     * @return bool
-     */
-    function savefile($content, $fichier = null)
-    {
-        $fw = '';
-        if (!$fichier) {
-            $fw = $this->filename;
-        } else {
-            $fw = XOOPS_UPLOAD_PATH . '/' . $fichier;
-        }
-        if (file_exists($fw)) {
-            @unlink($fw);
-        }
-        $fp = fopen($fw, 'w') || die(_ERRORS);
-        fwrite($fp, $content);
-        fclose($fp);
-
-        return true;
-    }
+if (!defined('XOOPS_ROOT_PATH')) {
+	die('XOOPS root path not defined');
 }
+
+class news_registryfile {
+	var $filename;	// filename to manage
+
+	function news_registryfile($fichier = null)
+	{
+		$this->setfile($fichier);
+  	}
+
+	function setfile($fichier = null)
+	{
+		if($fichier) {
+	  		$this->filename = XOOPS_UPLOAD_PATH.'/'.$fichier;
+	  	}
+	}
+
+	function getfile($fichier = null)
+  	{
+		$fw = '';
+		if(!$fichier) {
+			$fw = $this->filename;
+		} else {
+			$fw = XOOPS_UPLOAD_PATH.'/'.$fichier;
+		}
+		if(file_exists($fw)) {
+			return file_get_contents($fw);
+		} else {
+			return '';
+		}
+  	}
+
+  	function savefile($content, $fichier = null)
+  	{
+		$fw = '';
+		if(!$fichier) {
+			$fw = $this->filename;
+		} else {
+			$fw = XOOPS_UPLOAD_PATH.'/'.$fichier;
+		}
+		if(file_exists($fw)) {
+			@unlink($fw);
+		}
+		$fp = fopen($fw, 'w') or die(_ERRORS);
+		fwrite($fp, $content);
+		fclose($fp);
+		return true;
+  	}
+}
+?>
